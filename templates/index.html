@@ -7,150 +7,59 @@
     <title>Kisan Sathi ChatBot</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-      /* Custom font */
       @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-      body {
-        font-family: "Inter", sans-serif;
-        /* New: Added a subtle gradient background */
-        background: linear-gradient(to right, #e0f2f1, #dcedc8);
-      }
-      /* Custom scrollbar for a better look */
-      #chat-box::-webkit-scrollbar {
-        width: 8px;
-      }
-      #chat-box::-webkit-scrollbar-track {
-        background: #f1f1f1;
-      }
-      #chat-box::-webkit-scrollbar-thumb {
-        background: #a5d6a7; /* Softer green */
-        border-radius: 4px;
-      }
-      #chat-box::-webkit-scrollbar-thumb:hover {
-        background: #81c784; /* Darker green on hover */
-      }
-      /* Styling for the typing indicator */
-      .typing-indicator {
-        display: flex;
-        align-items: center;
-      }
-      .typing-indicator span {
-        height: 8px;
-        width: 8px;
-        margin: 0 2px;
-        background-color: #9e9e9e;
-        border-radius: 50%;
-        display: inline-block;
-        animation: bounce 1.4s infinite ease-in-out both;
-      }
-      .typing-indicator span:nth-child(1) {
-        animation-delay: -0.32s;
-      }
-      .typing-indicator span:nth-child(2) {
-        animation-delay: -0.16s;
-      }
-      @keyframes bounce {
-        0%,
-        80%,
-        100% {
-          transform: scale(0);
-        }
-        40% {
-          transform: scale(1);
-        }
-      }
-
-      /* New: Animation for messages appearing */
-      @keyframes slide-up {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .message-bubble {
-        animation: slide-up 0.3s ease-out;
-      }
-
-      /* Styles for bot response formatting */
-      .bot-response-content strong {
-        font-weight: 700; /* Bolder */
-        color: #2e7d32; /* Dark green for emphasis */
-      }
-      .bot-response-content ul {
-        list-style-type: disc;
-        padding-left: 20px;
-        margin-top: 8px;
-      }
-      .bot-response-content li {
-        margin-bottom: 4px;
-      }
+      body { font-family: "Inter", sans-serif; background: linear-gradient(to right, #e0f2f1, #dcedc8); }
+      #chat-box::-webkit-scrollbar { width: 8px; }
+      #chat-box::-webkit-scrollbar-track { background: #f1f1f1; }
+      #chat-box::-webkit-scrollbar-thumb { background: #a5d6a7; border-radius: 4px; }
+      #chat-box::-webkit-scrollbar-thumb:hover { background: #81c784; }
+      .typing-indicator { display: flex; align-items: center; }
+      .typing-indicator span { height: 8px; width: 8px; margin: 0 2px; background-color: #9e9e9e; border-radius: 50%; display: inline-block; animation: bounce 1.4s infinite ease-in-out both; }
+      .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+      .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+      @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+      @keyframes slide-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      .message-bubble { animation: slide-up 0.3s ease-out; }
+      .bot-response-content { line-height: 1.6; }
+      .bot-response-content h1, .bot-response-content h2, .bot-response-content h3 { font-weight: 700; color: #1b5e20; margin-top: 12px; margin-bottom: 6px; }
+      .bot-response-content h1 { font-size: 1.25em; } .bot-response-content h2 { font-size: 1.15em; } .bot-response-content h3 { font-size: 1.05em; }
+      .bot-response-content p { margin-bottom: 8px; }
+      .bot-response-content strong { font-weight: 600; color: #2e7d32; }
+      .bot-response-content ul, .bot-response-content ol { list-style-position: inside; padding-left: 10px; margin-top: 8px; margin-bottom: 8px; }
+      .bot-response-content ul { list-style-type: disc; } .bot-response-content ol { list-style-type: decimal; }
+      .bot-response-content li { margin-bottom: 4px; }
+      .bot-response-content a { color: #1565c0; text-decoration: underline; }
     </style>
   </head>
   <body class="bg-gray-100 flex items-center justify-center h-screen p-4">
-    <div
-      class="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-2xl flex flex-col h-[95vh] max-h-[700px]"
-    >
+    <div class="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-2xl flex flex-col h-[95vh] max-h-[700px]">
       <!-- Header -->
-      <div
-        class="bg-green-600 text-white p-4 rounded-t-2xl shadow-lg flex justify-between items-center"
-      >
+      <div class="bg-green-600 text-white p-4 rounded-t-2xl shadow-lg flex justify-between items-center">
         <h1 class="text-xl font-bold">Kisan Sathi ChatBot</h1>
-        <div class="relative">
-          <select
-            id="language-select"
-            class="bg-green-700 text-white rounded-md px-3 py-1.5 appearance-none focus:outline-none focus:ring-2 focus:ring-white transition hover:bg-green-800 cursor-pointer"
-          >
-            <option value="en" selected>English</option>
-            <option value="hi">हिंदी (Hindi)</option>
-            <option value="mr">मराठी (Marathi)</option>
-          </select>
+        <div class="flex items-center space-x-2">
+            <button id="clear-chat-btn" title="Clear Chat" class="p-2 rounded-full hover:bg-green-700 transition">
+                <svg xmlns="http://www.ww3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+            </button>
+            <select id="language-select" class="bg-green-700 text-white rounded-md px-3 py-1.5 appearance-none focus:outline-none focus:ring-2 focus:ring-white transition hover:bg-green-800 cursor-pointer">
+                <option value="en" selected>English</option>
+                <option value="hi">हिंदी (Hindi)</option>
+                <option value="mr">मराठी (Marathi)</option>
+            </select>
         </div>
       </div>
 
       <!-- Chat Messages Box -->
-      <div id="chat-box" class="flex-1 p-6 overflow-y-auto bg-gray-50">
-        <!-- Initial Bot Message -->
-        <div class="message-bubble mb-4 flex">
-          <div
-            class="bg-green-500 text-white rounded-lg py-2 px-4 max-w-xs shadow-md"
-          >
-            <p>Welcome! Please select your language and ask a question.</p>
-          </div>
-        </div>
-      </div>
+      <div id="chat-box" class="flex-1 p-6 overflow-y-auto bg-gray-50"></div>
 
       <!-- Input Area -->
       <div class="p-4 bg-white rounded-b-2xl border-t border-gray-200">
         <form id="chat-form" class="flex items-center space-x-3">
-          <input
-            type="text"
-            id="user-input"
-            placeholder="Type your message..."
-            autocomplete="off"
-            class="flex-1 w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow duration-300 focus:shadow-lg"
-          />
-          <button
-            type="submit"
-            class="bg-green-600 text-white rounded-full p-3 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-transform duration-200 transform hover:scale-110"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+          <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off" class="flex-1 w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow duration-300 focus:shadow-lg"/>
+          <button type="submit" class="bg-green-600 text-white rounded-full p-3 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-transform duration-200 transform hover:scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
           </button>
         </form>
       </div>
@@ -161,83 +70,41 @@
       const userInput = document.getElementById("user-input");
       const chatBox = document.getElementById("chat-box");
       const languageSelect = document.getElementById("language-select");
+      const clearChatBtn = document.getElementById("clear-chat-btn");
 
-      function formatBotResponse(text) {
-        let html = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-        const lines = html.split("\n");
-        let inList = false;
-        html = lines
-          .map((line) => {
-            if (line.trim().startsWith("* ") || line.trim().startsWith("- ")) {
-              const listItem = `<li>${line.trim().substring(2)}</li>`;
-              if (!inList) {
-                inList = true;
-                return `<ul>${listItem}`;
-              }
-              return listItem;
-            } else {
-              if (inList) {
-                inList = false;
-                return `</ul><p>${line}</p>`;
-              }
-              return `<p>${line}</p>`;
-            }
-          })
-          .join("");
-        if (inList) {
-          html += "</ul>";
-        }
-        html = html.replace(/<p><\/p>/g, "");
-        return html;
-      }
+      const welcomeMessages = {
+          'en': "Welcome! I'm Kisan Sathi. How can I help you with your farming today?",
+          'hi': "नमस्ते! मैं किसान साथी हूँ। मैं आज आपकी खेती में कैसे मदद कर सकता हूँ?",
+          'mr': "नमस्कार! मी किसान साथी आहे. मी आज तुमच्या शेतीत कशी मदत करू शकेन?"
+      };
 
       function addMessage(message, sender) {
         const messageDiv = document.createElement("div");
-        // Add animation class to all message bubbles
         messageDiv.classList.add("message-bubble", "mb-4", "flex");
 
-        if (sender === "typing") {
-          messageDiv.id = "typing-indicator";
-        }
-
         const contentDiv = document.createElement("div");
-        contentDiv.classList.add(
-          "py-2",
-          "px-4",
-          "rounded-lg",
-          "max-w-xs",
-          "shadow-md"
-        );
+        contentDiv.classList.add("py-2", "px-4", "rounded-lg", "max-w-xs", "shadow-md");
 
         if (sender === "user") {
           messageDiv.classList.add("justify-end");
-          // New: Added a gradient to user messages
-          contentDiv.classList.add(
-            "bg-gradient-to-br",
-            "from-blue-500",
-            "to-blue-600",
-            "text-white"
-          );
+          contentDiv.classList.add("bg-gradient-to-br", "from-blue-500", "to-blue-600", "text-white");
           contentDiv.innerHTML = `<p>${message}</p>`;
         } else {
-          contentDiv.classList.add("bg-gray-200", "text-gray-800");
-          if (sender === "bot") {
-            // Bot messages on white bg for better contrast
-            contentDiv.classList.add("bot-response-content", "bg-white");
-            contentDiv.innerHTML = formatBotResponse(message);
-          } else {
-            contentDiv.classList.remove("shadow-md"); // No shadow for typing indicator
-            contentDiv.innerHTML = `
-                        <div class="typing-indicator">
-                            <span></span><span></span><span></span>
-                        </div>
-                    `;
-          }
+          contentDiv.classList.add("bot-response-content", "bg-white", "text-gray-800");
+          contentDiv.innerHTML = message;
         }
 
         messageDiv.appendChild(contentDiv);
         chatBox.appendChild(messageDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
+        
+        return sender === "bot" ? contentDiv : null;
+      }
+
+      function resetChat() {
+          chatBox.innerHTML = '';
+          const currentLang = languageSelect.value;
+          addMessage(welcomeMessages[currentLang], 'bot');
       }
 
       chatForm.addEventListener("submit", async (e) => {
@@ -248,8 +115,9 @@
 
         addMessage(message, "user");
         userInput.value = "";
-
-        addMessage("", "typing");
+        
+        const botMessageContainer = addMessage('<div class="typing-indicator"><span></span><span></span><span></span></div>', "bot");
+        let accumulatedResponse = "";
 
         try {
           const response = await fetch("/get_response", {
@@ -258,22 +126,57 @@
             body: `message=${encodeURIComponent(message)}&language=${language}`,
           });
 
-          const data = await response.json();
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let isFirstChunk = true;
 
-          const typingIndicator = document.getElementById("typing-indicator");
-          if (typingIndicator) {
-            chatBox.removeChild(typingIndicator);
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            if (isFirstChunk) {
+              botMessageContainer.innerHTML = '';
+              isFirstChunk = false;
+            }
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n\n');
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const jsonData = line.substring(6);
+                    if (jsonData) {
+                        try {
+                            const parsedData = JSON.parse(jsonData);
+                            if (parsedData.token) accumulatedResponse += parsedData.token;
+                            if (parsedData.error) accumulatedResponse = `**Error:** ${parsedData.error}`;
+                        } catch (e) {
+                            console.error("Failed to parse JSON chunk:", jsonData);
+                        }
+                    }
+                }
+            }
+            
+            botMessageContainer.innerHTML = marked.parse(accumulatedResponse);
+            chatBox.scrollTop = chatBox.scrollHeight;
           }
-
-          addMessage(data.response, "bot");
         } catch (error) {
-          console.error("Error:", error);
-          const typingIndicator = document.getElementById("typing-indicator");
-          if (typingIndicator) {
-            chatBox.removeChild(typingIndicator);
-          }
-          addMessage("Sorry, something went wrong. Please try again.", "bot");
+          console.error("Streaming Error:", error);
+          botMessageContainer.innerHTML = marked.parse("Sorry, a connection error occurred. Please try again.");
         }
+      });
+      
+      clearChatBtn.addEventListener('click', async () => {
+          await fetch('/clear_history', { method: 'POST' });
+          resetChat();
+      });
+
+      languageSelect.addEventListener('change', async () => {
+          await fetch('/clear_history', { method: 'POST' });
+          resetChat();
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+          resetChat();
       });
     </script>
   </body>
